@@ -265,6 +265,34 @@
   font-size: 0.92rem;
 }
 
+.calendar-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.calendar-link {
+  display: inline-block;
+  text-decoration: none;
+  border-radius: 999px;
+  border: 1px solid #bfd4eb;
+  background: #f6faff;
+  color: #1c4f7f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+}
+
+.calendar-link-button {
+  cursor: pointer;
+  font: inherit;
+}
+
+.calendar-link:hover {
+  background: #e9f2ff;
+}
+
 .due {
   border-left: 4px solid #f94f6d;
 }

@@ -55,6 +55,73 @@ function getBirthdayOccurrence(birthdayIso, year) {
   return new Date(year, parsed.month, parsed.day)
 }
 
+function toGoogleAllDayDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}${month}${day}`
+}
+
+function buildGoogleCalendarLink({ friend, eventDate, title, details }) {
+  const endDate = addDays(eventDate, 1)
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    details,
+    dates: `${toGoogleAllDayDate(eventDate)}/${toGoogleAllDayDate(endDate)}`,
+    recur: 'RRULE:FREQ=YEARLY',
+  })
+  return `https://calendar.google.com/calendar/render?${params.toString()}`
+}
+
+function getCalendarLinks(friend, today) {
+  const nextBirthday = getNextBirthdayDate(friend.birthday, today)
+  const baseDetails = `Birthday reminder for ${friend.name}.${friend.note ? ` Note: ${friend.note}` : ''}`
+  const titlePrefix = `${friend.name} birthday reminder`
+
+  return [
+    {
+      key: '15',
+      label: 'Add 15d',
+      href: buildGoogleCalendarLink({
+        friend,
+        eventDate: addDays(nextBirthday, -15),
+        title: `${titlePrefix} (15 days before)`,
+        details: `${baseDetails} 15 days before birthday.`,
+      }),
+    },
+    {
+      key: '1',
+      label: 'Add 1d',
+      href: buildGoogleCalendarLink({
+        friend,
+        eventDate: addDays(nextBirthday, -1),
+        title: `${titlePrefix} (1 day before)`,
+        details: `${baseDetails} 1 day before birthday.`,
+      }),
+    },
+    {
+      key: '0',
+      label: 'Add Birthday',
+      href: buildGoogleCalendarLink({
+        friend,
+        eventDate: nextBirthday,
+        title: `${titlePrefix} (birthday day)`,
+        details: `${baseDetails} Birthday day.`,
+      }),
+    },
+  ]
+}
+
+function openAllCalendarLinks(friend, today) {
+  const links = getCalendarLinks(friend, today)
+  links.forEach((link, index) => {
+    setTimeout(() => {
+      window.open(link.href, '_blank', 'noopener,noreferrer')
+    }, index * 200)
+  })
+}
+
 function getNextBirthdayDate(birthdayIso, today) {
   const thisYearBirthday = getBirthdayOccurrence(birthdayIso, today.getFullYear())
   return thisYearBirthday >= today
@@ -536,6 +603,26 @@ function App() {
                     Birthday: {formatDate(getBirthdayOccurrence(friend.birthday, today.getFullYear()))}
                     {friend.note ? ` - ${friend.note}` : ''}
                   </p>
+                  <div className="calendar-links">
+                    <button
+                      type="button"
+                      className="calendar-link calendar-link-button"
+                      onClick={() => openAllCalendarLinks(friend, today)}
+                    >
+                      Add All 3
+                    </button>
+                    {getCalendarLinks(friend, today).map((link) => (
+                      <a
+                        key={link.key}
+                        className="calendar-link"
+                        href={link.href}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
                 </div>
                 <div className="row-actions">
                   <button className="edit-btn" type="button" onClick={() => startEditing(friend)}>
