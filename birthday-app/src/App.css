@@ -44,6 +44,11 @@
   color: #ffe8e8;
 }
 
+.success-text {
+  margin-top: 0.5rem;
+  color: #edffec;
+}
+
 .card {
   background: #fff;
   border-radius: 1rem;

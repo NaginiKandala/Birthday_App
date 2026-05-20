@@ -3,6 +3,7 @@ import './App.css'
 
 const FRIENDS_STORAGE_KEY = 'birthday-app-friends'
 const SENT_REMINDERS_STORAGE_KEY = 'birthday-app-sent-reminders'
+const DEVICE_ID_STORAGE_KEY = 'birthday-app-device-id'
 const REMINDER_STEPS = [
   { daysBefore: 15, label: '15 days before' },
   { daysBefore: 1, label: '1 day before' },
@@ -13,6 +14,49 @@ const PRIORITY_CIRCLES = [
   { key: 'circle_2', label: 'Circle 2', note: 'Medium priority' },
   { key: 'circle_3', label: 'Circle 3', note: 'Lower priority' },
 ]
+
+function isIosDevice() {
+  return /iPad|iPhone|iPod/.test(window.navigator.userAgent)
+}
+
+function isStandaloneDisplayMode() {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true
+  )
+}
+
+function getFirebaseClient() {
+  const firebase = window.firebase
+  const config = window.FIREBASE_CONFIG
+
+  if (!firebase || !config || !config.apiKey) {
+    return null
+  }
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp({
+      apiKey: config.apiKey,
+      authDomain: config.authDomain,
+      projectId: config.projectId,
+      storageBucket: config.storageBucket,
+      messagingSenderId: config.messagingSenderId,
+      appId: config.appId,
+    })
+  }
+
+  return firebase
+}
+
+function getOrCreateDeviceId() {
+  const existing = localStorage.getItem(DEVICE_ID_STORAGE_KEY)
+  if (existing) {
+    return existing
+  }
+  const nextId = crypto.randomUUID()
+  localStorage.setItem(DEVICE_ID_STORAGE_KEY, nextId)
+  return nextId
+}
 
 function normalizePriority(value) {
   if (PRIORITY_CIRCLES.some((item) => item.key === value)) {
@@ -189,6 +233,7 @@ function loadSentReminders() {
 }
 
 function App() {
+  const [deviceId] = useState(getOrCreateDeviceId)
   const [friends, setFriends] = useState(loadFriends)
   const [sentReminders, setSentReminders] = useState(loadSentReminders)
   const [permission, setPermission] = useState(
@@ -199,6 +244,8 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [error, setError] = useState('')
+  const [setupMessage, setSetupMessage] = useState('')
+  const [syncMessage, setSyncMessage] = useState('')
   const importInputRef = useRef(null)
 
   const today = startOfDay(new Date())
@@ -225,6 +272,65 @@ function App() {
   useEffect(() => {
     localStorage.setItem(FRIENDS_STORAGE_KEY, JSON.stringify(friends))
   }, [friends])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function syncFriendsToCloud() {
+      const firebase = getFirebaseClient()
+      if (!firebase?.firestore) {
+        return
+      }
+
+      const db = firebase.firestore()
+      const userRef = db.collection('users').doc(deviceId)
+      const friendsRef = userRef.collection('friends')
+      const batch = db.batch()
+
+      batch.set(
+        userRef,
+        {
+          deviceId,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      )
+
+      const existingFriends = await friendsRef.get()
+      const incomingIds = new Set(friends.map((friend) => friend.id))
+      existingFriends.forEach((doc) => {
+        if (!incomingIds.has(doc.id)) {
+          batch.delete(doc.ref)
+        }
+      })
+
+      friends.forEach((friend) => {
+        batch.set(
+          friendsRef.doc(friend.id),
+          {
+            ...friend,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        )
+      })
+
+      await batch.commit()
+      if (!isCancelled) {
+        setSyncMessage('Friend records synced to cloud.')
+      }
+    }
+
+    syncFriendsToCloud().catch(() => {
+      if (!isCancelled) {
+        setSyncMessage('Cloud sync pending. Check Firebase Firestore setup.')
+      }
+    })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [deviceId, friends])
 
   useEffect(() => {
     localStorage.setItem(SENT_REMINDERS_STORAGE_KEY, JSON.stringify(sentReminders))
@@ -259,14 +365,61 @@ function App() {
       return
     }
 
-    Notification.requestPermission().then((result) => {
-      setPermission(result)
-      if (result !== 'granted') {
-        setError('Please allow notifications to get reminder alerts.')
-      } else {
+    if (isIosDevice() && !isStandaloneDisplayMode()) {
+      setError(
+        'On iPhone, install this app to Home Screen first, then open from that icon and tap Enable notifications.',
+      )
+      return
+    }
+
+    const firebase = getFirebaseClient()
+    if (!firebase?.messaging) {
+      setError('Firebase is not configured yet. Add your Firebase keys in public/firebase-config.js.')
+      return
+    }
+
+    Notification.requestPermission()
+      .then(async (result) => {
+        setPermission(result)
+        if (result !== 'granted') {
+          setError('Please allow notifications to get reminder alerts.')
+          return
+        }
+
+        const registration = await navigator.serviceWorker.register('/sw.js')
+        const messaging = firebase.messaging()
+        const token = await messaging.getToken({
+          vapidKey: window.FIREBASE_CONFIG?.vapidKey,
+          serviceWorkerRegistration: registration,
+        })
+
+        if (!token) {
+          setError('Unable to get push token. Check Firebase Web Push certificate key (VAPID).')
+          return
+        }
+
+        localStorage.setItem('birthday-app-fcm-token', token)
+        setSetupMessage('Push is enabled for this device.')
         setError('')
-      }
-    })
+
+        if (firebase.firestore) {
+          const db = firebase.firestore()
+          await db.collection('deviceTokens').doc(token).set(
+            {
+              token,
+              userId: deviceId,
+              enabled: true,
+              platform: navigator.platform || 'unknown',
+              userAgent: navigator.userAgent,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          )
+        }
+      })
+      .catch(() => {
+        setError('Notification setup failed. Please check Firebase config and browser permissions.')
+      })
   }
 
   function handleInputChange(event) {
@@ -416,6 +569,8 @@ function App() {
         <button className="notify-btn" onClick={requestPermission} type="button">
           {permission === 'granted' ? 'Notifications enabled' : 'Enable notifications'}
         </button>
+        {setupMessage && <p className="success-text">{setupMessage}</p>}
+        {syncMessage && <p className="success-text">{syncMessage}</p>}
         {error && <p className="error-text">{error}</p>}
       </section>
 
