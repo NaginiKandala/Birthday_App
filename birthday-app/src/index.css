@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+html {
+  font-family: Poppins, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% 10%, #ffe2b5 0%, #ffe2b500 45%),
+    radial-gradient(circle at 90% 0%, #ffd0d9 0%, #ffd0d900 40%),
+    #eef3f9;
+}
+
+#root {
+  min-height: 100vh;
+}

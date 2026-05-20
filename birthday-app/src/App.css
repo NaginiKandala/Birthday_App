@@ -1,0 +1,377 @@
+.app-shell {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero {
+  background: linear-gradient(130deg, #ff7b00, #f94f6d);
+  color: #fff;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.hero h1 {
+  margin: 0.5rem 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.hero-subtitle {
+  margin-top: 0;
+}
+
+.notify-btn {
+  border: 0;
+  background: #fff;
+  color: #ad2f24;
+  font-weight: 700;
+  border-radius: 0.7rem;
+  padding: 0.7rem 1rem;
+}
+
+.error-text {
+  margin-top: 0.5rem;
+  color: #ffe8e8;
+}
+
+.card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 8px 25px rgba(20, 31, 51, 0.09);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+
+.friend-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.form-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.form-fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.friend-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.friend-form input {
+  font: inherit;
+  border: 1px solid #cfd8e3;
+  border-radius: 0.6rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.friend-form button:not(.priority-btn) {
+  border: 0;
+  border-radius: 0.7rem;
+  background: #0f355d;
+  color: #fff;
+  padding: 0.72rem 1rem;
+  font-weight: 700;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.secondary-btn {
+  border: 1px solid #c2d4e6;
+  border-radius: 0.7rem;
+  background: #f2f7fd;
+  color: #1d4870;
+  padding: 0.72rem 1rem;
+  font-weight: 700;
+}
+
+.priority-picker {
+  border: 1px solid #d3deea;
+  border-radius: 0.8rem;
+  padding: 0.7rem;
+  margin: 0;
+  min-width: 340px;
+}
+
+.priority-picker legend {
+  font-weight: 700;
+  color: #0f355d;
+  padding: 0 0.3rem;
+}
+
+.priority-wheel {
+  width: 340px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 1px solid #d3e4ec;
+  background: radial-gradient(circle at center, #f7fbff 0%, #ebf2f8 100%);
+  position: relative;
+}
+
+.priority-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.ring-outer {
+  width: 100%;
+  border: 2px solid #9fceb7;
+  background: #dff5ea;
+}
+
+.ring-middle {
+  width: 68%;
+  border: 2px solid #e6c06f;
+  background: #fff2ce;
+}
+
+.ring-inner {
+  width: 38%;
+  border: 2px solid #db8ba0;
+  background: #ffe8ee;
+}
+
+.priority-btn.active {
+  transform: translate(-50%, -50%) scale(1.01);
+  box-shadow: 0 0 0 5px rgba(15, 115, 136, 0.16), 0 10px 20px rgba(8, 43, 58, 0.14);
+}
+
+.ring-outer.active {
+  border-color: #3f9d69;
+}
+
+.ring-middle.active {
+  border-color: #d4a33d;
+}
+
+.ring-inner.active {
+  border-color: #c5667d;
+}
+
+.circle-number {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #114356;
+}
+
+.circle-word {
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.priority-note {
+  margin: 0.55rem 0 0;
+  text-align: center;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4f6f7c;
+}
+
+.priority-people {
+  margin-top: 0.65rem;
+  border-top: 1px dashed #c7d7e4;
+  padding-top: 0.55rem;
+}
+
+.priority-people-title {
+  margin: 0;
+  font-weight: 700;
+  color: #173d64;
+  font-size: 0.9rem;
+}
+
+.priority-people-list {
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.priority-people-list li {
+  background: #f4f8fe;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.9rem;
+  color: #2f4661;
+}
+
+.small-muted {
+  margin-top: 0.45rem;
+  font-size: 0.88rem;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #f5f8fc;
+}
+
+.list p {
+  margin: 0.2rem 0 0;
+  color: #42556d;
+  font-size: 0.92rem;
+}
+
+.due {
+  border-left: 4px solid #f94f6d;
+}
+
+.badge {
+  background: #dfeeff;
+  color: #17416f;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.55rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.remove-btn {
+  border: 0;
+  border-radius: 0.55rem;
+  background: #ffebe9;
+  color: #8a1e15;
+  padding: 0.45rem 0.65rem;
+  font-weight: 700;
+}
+
+.edit-btn {
+  border: 0;
+  border-radius: 0.55rem;
+  background: #e8f1ff;
+  color: #1d4771;
+  padding: 0.45rem 0.65rem;
+  font-weight: 700;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.friends-controls {
+  display: grid;
+  grid-template-columns: 1fr 170px;
+  gap: 0.55rem;
+  margin-bottom: 0.55rem;
+}
+
+.friends-controls input,
+.friends-controls select {
+  font: inherit;
+  border: 1px solid #cfd8e3;
+  border-radius: 0.6rem;
+  padding: 0.58rem 0.7rem;
+}
+
+.backup-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.muted {
+  color: #516477;
+}
+
+.footer-note {
+  text-align: center;
+  color: #2f4055;
+  font-size: 0.9rem;
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 700px) {
+  .app-shell {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hero {
+    grid-column: 1 / -1;
+  }
+
+  .add-friend-card {
+    grid-column: 1 / -1;
+  }
+
+  .footer-note {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 880px) {
+  .form-main {
+    grid-template-columns: 1fr;
+  }
+
+  .priority-picker {
+    min-width: unset;
+  }
+
+  .priority-wheel {
+    width: min(300px, 100%);
+    margin-inline: auto;
+  }
+
+  .friends-controls {
+    grid-template-columns: 1fr;
+  }
+}
