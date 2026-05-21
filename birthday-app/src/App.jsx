@@ -463,6 +463,13 @@ function App() {
       ])
     }
 
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const birthdayPreview = getBirthdayOccurrence(form.birthday, today.getFullYear())
+      new Notification(`Saved: ${trimmedName}`, {
+        body: `Reminder tracking started. Birthday on ${formatDate(birthdayPreview)}.`,
+      })
+    }
+
     setForm({ name: '', birthday: '', note: '', priority: 'circle_1' })
     setEditingFriendId(null)
     setError('')
