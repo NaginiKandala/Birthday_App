@@ -113,6 +113,51 @@ function formatDate(date) {
   })
 }
 
+function normalizeBirthdayInput(raw) {
+  if (!raw || typeof raw !== 'string') {
+    return ''
+  }
+
+  const value = raw.trim()
+  const ymdMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  const dmyMatch = value.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/)
+
+  let year
+  let month
+  let day
+
+  if (ymdMatch) {
+    year = Number(ymdMatch[1])
+    month = Number(ymdMatch[2])
+    day = Number(ymdMatch[3])
+  } else if (dmyMatch) {
+    day = Number(dmyMatch[1])
+    month = Number(dmyMatch[2])
+    year = Number(dmyMatch[3])
+  } else {
+    return ''
+  }
+
+  const candidate = new Date(year, month - 1, day)
+  const isValidDate =
+    candidate.getFullYear() === year &&
+    candidate.getMonth() === month - 1 &&
+    candidate.getDate() === day
+
+  if (!isValidDate) {
+    return ''
+  }
+
+  const mm = String(month).padStart(2, '0')
+  const dd = String(day).padStart(2, '0')
+  return `${year}-${mm}-${dd}`
+}
+
+function formatBirthdayInput(isoDate) {
+  const [year, month, day] = isoDate.split('-')
+  return `${day}/${month}/${year}`
+}
+
 function parseMonthDay(birthdayIso) {
   const [year, month, day] = birthdayIso.split('-').map(Number)
   return { year, month: month - 1, day }
@@ -238,12 +283,21 @@ function loadFriends() {
     if (!Array.isArray(parsed)) {
       return []
     }
-    return parsed.map((friend) => ({
-      ...friend,
-      note: typeof friend.note === 'string' ? friend.note : '',
-      phone: typeof friend.phone === 'string' ? friend.phone : '',
-      priority: normalizePriority(friend.priority),
-    }))
+    return parsed
+      .map((friend) => {
+        const birthday = normalizeBirthdayInput(friend.birthday)
+        if (!birthday) {
+          return null
+        }
+        return {
+          ...friend,
+          birthday,
+          note: typeof friend.note === 'string' ? friend.note : '',
+          phone: typeof friend.phone === 'string' ? friend.phone : '',
+          priority: normalizePriority(friend.priority),
+        }
+      })
+      .filter(Boolean)
   } catch {
     return []
   }
@@ -463,9 +517,10 @@ function App() {
   function saveFriend(event) {
     event.preventDefault()
     const trimmedName = form.name.trim()
+    const normalizedBirthday = normalizeBirthdayInput(form.birthday)
 
-    if (!trimmedName || !form.birthday) {
-      setError('Please enter both friend name and birthday.')
+    if (!trimmedName || !normalizedBirthday) {
+      setError('Please enter friend name and birthday in DD/MM/YYYY or YYYY-MM-DD format.')
       return
     }
 
@@ -476,7 +531,7 @@ function App() {
             ? {
                 ...friend,
                 name: trimmedName,
-                birthday: form.birthday,
+                birthday: normalizedBirthday,
                 note: form.note.trim(),
                 phone: form.phone.trim(),
                 priority: form.priority,
@@ -490,7 +545,7 @@ function App() {
         {
           id: crypto.randomUUID(),
           name: trimmedName,
-          birthday: form.birthday,
+          birthday: normalizedBirthday,
           note: form.note.trim(),
           phone: form.phone.trim(),
           priority: form.priority,
@@ -499,7 +554,7 @@ function App() {
     }
 
     if ('Notification' in window && Notification.permission === 'granted') {
-      const birthdayPreview = getBirthdayOccurrence(form.birthday, today.getFullYear())
+      const birthdayPreview = getBirthdayOccurrence(normalizedBirthday, today.getFullYear())
       new Notification(`Saved: ${trimmedName}`, {
         body: `Reminder tracking started. Birthday on ${formatDate(birthdayPreview)}.`,
       })
@@ -521,7 +576,7 @@ function App() {
   function startEditing(friend) {
     setForm({
       name: friend.name,
-      birthday: friend.birthday,
+      birthday: formatBirthdayInput(friend.birthday),
       note: friend.note,
       phone: friend.phone,
       priority: normalizePriority(friend.priority),
@@ -587,14 +642,21 @@ function App() {
             typeof friend.name === 'string' &&
             typeof friend.birthday === 'string',
         )
-        .map((friend) => ({
-          id: friend.id,
-          name: friend.name.trim(),
-          birthday: friend.birthday,
-          note: typeof friend.note === 'string' ? friend.note : '',
-          phone: typeof friend.phone === 'string' ? friend.phone : '',
-          priority: normalizePriority(friend.priority),
-        }))
+        .map((friend) => {
+          const birthday = normalizeBirthdayInput(friend.birthday)
+          if (!birthday) {
+            return null
+          }
+          return {
+            id: friend.id,
+            name: friend.name.trim(),
+            birthday,
+            note: typeof friend.note === 'string' ? friend.note : '',
+            phone: typeof friend.phone === 'string' ? friend.phone : '',
+            priority: normalizePriority(friend.priority),
+          }
+        })
+        .filter(Boolean)
 
       if (normalized.length === 0) {
         throw new Error('Backup has no valid friends')
@@ -645,7 +707,8 @@ function App() {
                 Birthday
                 <input
                   name="birthday"
-                  type="date"
+                  type="text"
+                  placeholder="DD/MM/YYYY or YYYY-MM-DD"
                   value={form.birthday}
                   onChange={handleInputChange}
                 />
