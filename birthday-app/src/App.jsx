@@ -58,6 +58,30 @@ function getOrCreateDeviceId() {
   return nextId
 }
 
+function normalizeWhatsappPhone(input) {
+  if (!input) {
+    return ''
+  }
+
+  let digits = input.replace(/[^\d+]/g, '')
+  if (digits.startsWith('00')) {
+    digits = digits.slice(2)
+  }
+  if (digits.startsWith('+')) {
+    digits = digits.slice(1)
+  }
+  return digits.replace(/\D/g, '')
+}
+
+function buildWhatsappWishLink(friend) {
+  const phone = normalizeWhatsappPhone(friend.phone)
+  if (!phone) {
+    return ''
+  }
+  const wishText = `Happy Birthday ${friend.name}! Wishing you lots of joy, health, and success. Have a wonderful day!`
+  return `https://wa.me/${phone}?text=${encodeURIComponent(wishText)}`
+}
+
 function normalizePriority(value) {
   if (PRIORITY_CIRCLES.some((item) => item.key === value)) {
     return value
@@ -216,6 +240,8 @@ function loadFriends() {
     }
     return parsed.map((friend) => ({
       ...friend,
+      note: typeof friend.note === 'string' ? friend.note : '',
+      phone: typeof friend.phone === 'string' ? friend.phone : '',
       priority: normalizePriority(friend.priority),
     }))
   } catch {
@@ -239,7 +265,13 @@ function App() {
   const [permission, setPermission] = useState(
     'Notification' in window ? Notification.permission : 'default',
   )
-  const [form, setForm] = useState({ name: '', birthday: '', note: '', priority: 'circle_1' })
+  const [form, setForm] = useState({
+    name: '',
+    birthday: '',
+    note: '',
+    phone: '',
+    priority: 'circle_1',
+  })
   const [editingFriendId, setEditingFriendId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('all')
@@ -262,7 +294,8 @@ function App() {
       const matchesSearch =
         term.length === 0 ||
         friend.name.toLowerCase().includes(term) ||
-        friend.note.toLowerCase().includes(term)
+        friend.note.toLowerCase().includes(term) ||
+        friend.phone.toLowerCase().includes(term)
       const matchesPriority =
         priorityFilter === 'all' || normalizePriority(friend.priority) === priorityFilter
       return matchesSearch && matchesPriority
@@ -445,6 +478,7 @@ function App() {
                 name: trimmedName,
                 birthday: form.birthday,
                 note: form.note.trim(),
+                phone: form.phone.trim(),
                 priority: form.priority,
               }
             : friend,
@@ -458,6 +492,7 @@ function App() {
           name: trimmedName,
           birthday: form.birthday,
           note: form.note.trim(),
+          phone: form.phone.trim(),
           priority: form.priority,
         },
       ])
@@ -470,7 +505,7 @@ function App() {
       })
     }
 
-    setForm({ name: '', birthday: '', note: '', priority: 'circle_1' })
+    setForm({ name: '', birthday: '', note: '', phone: '', priority: 'circle_1' })
     setEditingFriendId(null)
     setError('')
   }
@@ -478,7 +513,7 @@ function App() {
   function removeFriend(friendId) {
     setFriends((current) => current.filter((friend) => friend.id !== friendId))
     if (editingFriendId === friendId) {
-      setForm({ name: '', birthday: '', note: '', priority: 'circle_1' })
+      setForm({ name: '', birthday: '', note: '', phone: '', priority: 'circle_1' })
       setEditingFriendId(null)
     }
   }
@@ -488,6 +523,7 @@ function App() {
       name: friend.name,
       birthday: friend.birthday,
       note: friend.note,
+      phone: friend.phone,
       priority: normalizePriority(friend.priority),
     })
     setEditingFriendId(friend.id)
@@ -495,9 +531,18 @@ function App() {
   }
 
   function cancelEditing() {
-    setForm({ name: '', birthday: '', note: '', priority: 'circle_1' })
+    setForm({ name: '', birthday: '', note: '', phone: '', priority: 'circle_1' })
     setEditingFriendId(null)
     setError('')
+  }
+
+  function openWhatsappWish(friend) {
+    const link = buildWhatsappWishLink(friend)
+    if (!link) {
+      setError('Please add a valid phone number with country code for WhatsApp.')
+      return
+    }
+    window.open(link, '_blank', 'noopener,noreferrer')
   }
 
   function exportBackup() {
@@ -547,6 +592,7 @@ function App() {
           name: friend.name.trim(),
           birthday: friend.birthday,
           note: typeof friend.note === 'string' ? friend.note : '',
+          phone: typeof friend.phone === 'string' ? friend.phone : '',
           priority: normalizePriority(friend.priority),
         }))
 
@@ -556,7 +602,7 @@ function App() {
 
       setFriends(normalized)
       setEditingFriendId(null)
-      setForm({ name: '', birthday: '', note: '', priority: 'circle_1' })
+      setForm({ name: '', birthday: '', note: '', phone: '', priority: 'circle_1' })
       setError('')
     } catch {
       setError('Import failed. Please use a valid backup JSON file.')
@@ -610,6 +656,15 @@ function App() {
                   name="note"
                   placeholder="Gift idea, nickname..."
                   value={form.note}
+                  onChange={handleInputChange}
+                />
+              </label>
+              <label>
+                Phone (WhatsApp)
+                <input
+                  name="phone"
+                  placeholder="e.g. +91 9876543210"
+                  value={form.phone}
                   onChange={handleInputChange}
                 />
               </label>
@@ -765,7 +820,15 @@ function App() {
                     Birthday: {formatDate(getBirthdayOccurrence(friend.birthday, today.getFullYear()))}
                     {friend.note ? ` - ${friend.note}` : ''}
                   </p>
+                  {friend.phone && <p>Phone: {friend.phone}</p>}
                   <div className="calendar-links">
+                    <button
+                      type="button"
+                      className="calendar-link calendar-link-button whatsapp-link"
+                      onClick={() => openWhatsappWish(friend)}
+                    >
+                      Send WhatsApp Wish
+                    </button>
                     <button
                       type="button"
                       className="calendar-link calendar-link-button"
@@ -804,7 +867,7 @@ function App() {
         )}
       </section>
       <footer className="footer-note">
-        Keep this app opened at least once daily so reminders can be checked reliably in the browser.
+        Your saved birthdays are stored permanently on this device and synced to cloud when Firebase is enabled.
       </footer>
     </main>
   )

@@ -294,6 +294,12 @@
   font: inherit;
 }
 
+.whatsapp-link {
+  border-color: #a8dfc0;
+  background: #ebfff3;
+  color: #1b6d40;
+}
+
 .calendar-link:hover {
   background: #e9f2ff;
 }
